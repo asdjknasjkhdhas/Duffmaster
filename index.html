@@ -3,63 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROM Player</title>
+    <title>GBA ROM Player</title>
     <style>
         body {
+            background-color: #1e1e1e;
+            color: white;
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        #emulator {
-            border: 1px solid black;
-            margin-top: 20px;
+        h1 {
+            background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            animation: rainbow 5s infinite;
+        }
+        @keyframes rainbow {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
         }
         #dropzone {
             border: 2px dashed #ccc;
             padding: 20px;
+            width: 300px;
             margin-top: 20px;
             cursor: pointer;
+            background-color: #333;
+            color: #ccc;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        #dropzone:hover {
+            background-color: #555;
+            color: white;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            display: none;
+        }
+        input[type="file"] {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <h1>Drag and Drop ROM Player</h1>
+    <h1>GBA ROM Player</h1>
     <div id="dropzone">
-        Drag & Drop ROM Here or Click to Browse
-        <input type="file" id="fileInput" style="display:none;" accept=".nes">
+        Drag & Drop GBA ROM Here or Click to Browse
+        <input type="file" id="fileInput" accept=".gba">
     </div>
-    <canvas id="emulator" width="256" height="240"></canvas>
+    <canvas id="emulator" width="240" height="160"></canvas>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsnes@1.1.0/dist/jsnes.min.js"></script>
+    <script src="https://unpkg.com/gbajs@0.1.1/dist/gbajs.min.js"></script>
     <script>
-        const nes = new jsnes.NES({
-            onFrame: function(frameBuffer) {
-                const canvas = document.getElementById('emulator');
-                const context = canvas.getContext('2d');
-                const imageData = context.createImageData(256, 240);
-                for (let i = 0; i < frameBuffer.length; i++) {
-                    imageData.data[i * 4 + 0] = frameBuffer[i] & 0xFF;
-                    imageData.data[i * 4 + 1] = (frameBuffer[i] >> 8) & 0xFF;
-                    imageData.data[i * 4 + 2] = (frameBuffer[i] >> 16) & 0xFF;
-                    imageData.data[i * 4 + 3] = 0xFF;
-                }
-                context.putImageData(imageData, 0, 0);
-            },
-            onStatusUpdate: function(status) {
-                console.log(status);
-            },
-            onAudioSample: function(left, right) {
-                // Handle audio samples if needed
-            }
-        });
+        const gba = new GameBoyAdvance();
+        const canvas = document.getElementById('emulator');
+        const context = canvas.getContext('2d');
+        gba.setCanvas(canvas);
 
         function playROM(file) {
             const reader = new FileReader();
             reader.onload = function() {
-                nes.loadROM(reader.result);
-                nes.start();
+                const result = reader.result;
+                gba.loadRomFromFile(result);
+                canvas.style.display = 'block';
+                gba.runStable();
             };
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         }
 
         document.getElementById('dropzone').addEventListener('click', function() {
@@ -68,8 +87,10 @@
 
         document.getElementById('fileInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
-            if (file && file.name.endsWith('.nes')) {
+            if (file && file.name.endsWith('.gba')) {
                 playROM(file);
+            } else {
+                alert('Please select a valid .gba file.');
             }
         });
 
@@ -83,8 +104,10 @@
             event.preventDefault();
             event.stopPropagation();
             const file = event.dataTransfer.files[0];
-            if (file && file.name.endsWith('.nes')) {
+            if (file && file.name.endsWith('.gba')) {
                 playROM(file);
+            } else {
+                alert('Please drop a valid .gba file.');
             }
         });
     </script>
